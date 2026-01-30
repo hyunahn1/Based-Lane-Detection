@@ -183,12 +183,13 @@ Output (H×W×C)
 ```python
 ASPP(
     1×1 conv (256 filters),
-    3×3 atrous conv (rate=6, 256 filters),
     3×3 atrous conv (rate=12, 256 filters),
-    3×3 atrous conv (rate=18, 256 filters),
+    3×3 atrous conv (rate=24, 256 filters),
+    3×3 atrous conv (rate=36, 256 filters),
     Global Average Pooling
 ) → Concatenate → 1×1 conv (256 filters)
 ```
+*Note: Using torchvision's pre-trained DeepLabV3 implementation with default ASPP rates.*
 
 **3. Decoder**
 - Upsamples ASPP output 4×
@@ -199,7 +200,19 @@ ASPP(
 
 We employ a **combined loss** to address multiple challenges:
 
-#### 3.3.1 Dice Loss
+#### 3.3.1 Cross-Entropy Loss
+
+**Formula:**
+```
+CE = -∑ y_i * log(ŷ_i)
+```
+
+**Purpose:**
+- Standard pixel-wise classification loss
+- Provides strong learning signal
+- Well-established for segmentation tasks
+
+#### 3.3.2 Dice Loss
 
 **Formula:**
 ```
@@ -210,41 +223,40 @@ Dice = 1 - (2 * |X ∩ Y|) / (|X| + |Y|)
 - Directly optimizes IoU/Dice Score
 - Handles class imbalance (lane pixels ≪ background)
 - Smooth, differentiable
-
-#### 3.3.2 Focal Loss
-
-**Formula:**
-```
-FL(p_t) = -α_t * (1 - p_t)^γ * log(p_t)
-```
-
-**Parameters:**
-- α = 0.25 (class balancing)
-- γ = 2 (focus on hard examples)
-
-**Purpose:**
-- Down-weights easy examples (background)
-- Focuses on hard misclassified pixels (lane boundaries)
+- More robust to class imbalance than CE alone
 
 #### 3.3.3 Combined Loss
 
 ```python
-Total Loss = λ₁ * Dice Loss + λ₂ * Focal Loss
-           = 0.5 * Dice + 0.5 * Focal
+Total Loss = λ₁ * CrossEntropy + λ₂ * Dice Loss
+           = 1.0 * CE + 3.0 * Dice
 ```
+
+**Rationale:** Higher weight on Dice Loss (3×) emphasizes overlap quality over pixel-wise accuracy.
 
 ### 3.4 Training Strategy
 
 #### 3.4.1 Optimization
 
+**Baseline Model:**
 - **Optimizer**: Adam (β₁=0.9, β₂=0.999)
 - **Initial Learning Rate**: 1e-4
-- **LR Scheduler**: ReduceLROnPlateau
-  - Factor: 0.5
-  - Patience: 10 epochs
-  - Min LR: 1e-7
-- **Batch Size**: 8 (baseline), 12 (optimized)
+- **LR Scheduler**: ReduceLROnPlateau (factor=0.5, patience=10)
+- **Batch Size**: 8
+- **Mixed Precision**: No
+- **Epochs**: 50
+
+**Optimized Model:**
+- **Optimizer**: AdamW (β₁=0.9, β₂=0.999, weight_decay=1e-4)
+- **Learning Rate Strategy**: Differential LR
+  - Backbone (ResNet-101): 1e-5 (10× slower)
+  - Decoder/Classifier: 1e-4
+- **LR Scheduler**: CosineAnnealingLR
+  - T_max: 100 epochs
+  - Min LR: 1e-6
+- **Batch Size**: 4 (physical) × 3 (accumulation) = 12 (effective)
 - **Mixed Precision**: FP16 with GradScaler
+- **Epochs**: 100
 
 #### 3.4.2 Regularization
 
@@ -257,10 +269,12 @@ Total Loss = λ₁ * Dice Loss + λ₂ * Focal Loss
 
 | Parameter | Baseline | Optimized |
 |-----------|----------|-----------|
-| Epochs | 50 | 200 |
-| Batch Size | 8 | 12 |
+| Epochs | 50 | 100 |
+| Batch Size | 8 | 4×3=12 (grad accum) |
 | Resolution | 320×320 | 384×384 |
-| Mixed Precision | ❌ | ✅ |
+| Optimizer | Adam | AdamW + Differential LR |
+| LR Scheduler | ReduceLROnPlateau | CosineAnnealingLR |
+| Mixed Precision | ❌ | ✅ FP16 |
 | Augmentation | Moderate | Aggressive |
 
 ### 3.5 Post-Processing Pipeline
@@ -428,16 +442,18 @@ python train_baseline.py
 
 ### 5.4 Optimized Experiments
 
-#### Run 2: Optimized Training (200 epochs, 384×384, Post-processing)
+#### Run 2: Optimized Training (100 epochs, 384×384, Post-processing)
 
 ```bash
 python train_optimized.py
 ```
 
 **Configuration:**
-- Epochs: 200
-- Batch Size: 12
+- Epochs: 100
+- Batch Size: 4 (physical) × 3 (gradient accumulation) = 12 (effective)
 - Resolution: 384×384
+- Optimizer: AdamW with differential learning rates
+- LR Scheduler: CosineAnnealingLR
 - Mixed Precision: FP16
 - Augmentation: Aggressive
 - Post-processing: Morphology + CCA
@@ -603,12 +619,17 @@ See `test_results/` and `test_results_optimized/` folders for:
 
 #### 7.4.2 Loss Function Design
 
-✅ **Key Lesson:** Combined losses (Dice + Focal) handle class imbalance better than CE alone.
+✅ **Key Lesson:** Combined losses (CE + Dice) handle class imbalance better than CE alone.
 
 **Empirical Evidence:**
-- CE Loss only: IoU ~0.59
-- Dice Loss only: IoU ~0.63
-- **Dice + Focal**: IoU ~0.70
+- CE Loss only: Struggles with small objects, focuses on pixel accuracy
+- Dice Loss only: Better overlap but slower convergence
+- **CE + Dice (weighted 1:3)**: Best balance - IoU ~0.70
+
+**Why this combination works:**
+- CE provides strong gradients for learning
+- Dice directly optimizes overlap (IoU proxy)
+- Higher Dice weight (3×) prioritizes segmentation quality
 
 #### 7.4.3 Post-Processing Necessity
 
@@ -811,43 +832,62 @@ This project successfully demonstrates **high-performance lane detection** for a
 
 ### 12.3 Future Work
 
-#### Short-Term (1-3 months)
-1. **Precision Optimization**
-   - Adaptive thresholding
+#### Short-Term Improvements
+1. **Loss Function Enhancement**
+   - Experiment with Focal Loss for hard example mining
+   - Tversky Loss for precision-recall trade-off tuning
+   - Boundary loss for sharper edges
+
+2. **Training Extensions**
+   - Extend to 200 epochs for potential further gains
+   - Implement proper ReduceLROnPlateau for adaptive LR
+   - Test higher resolutions (512×512, 640×480)
+
+3. **Precision Optimization**
+   - Adaptive thresholding based on confidence
    - Confidence-based filtering
    - Stricter morphological operations
 
-2. **Data Collection**
+4. **Data Collection**
    - Expand to 500+ images
    - Multiple track configurations
    - Varied lighting conditions
 
-3. **Model Compression**
+#### Long-Term Research Directions
+1. **Model Architecture**
+   - Compare with newer architectures (SegFormer, Mask2Former)
+   - Implement proper DeepLabV3+ from scratch with custom ASPP
+   - Ensemble multiple architectures
+
+2. **Model Compression**
    - Knowledge distillation (ResNet-101 → MobileNetV3)
    - Quantization (FP32 → INT8)
    - Pruning for embedded deployment
 
-#### Long-Term (6+ months)
-1. **Multi-Task Learning**
+3. **Multi-Task Learning**
    - Joint lane + object detection
    - Depth estimation for 3D awareness
 
-2. **Temporal Modeling**
+4. **Temporal Modeling**
    - Video-based tracking (LSTMs, Transformers)
    - Motion prediction for smoother navigation
 
-3. **Real-World Deployment**
+5. **Real-World Deployment**
    - Edge device optimization (Jetson Nano, Raspberry Pi)
    - Real-time closed-loop control
    - Robustness testing in diverse environments
 
 ### 12.4 Lessons Learned
 
-1. **Transfer learning is crucial** for small datasets
-2. **Combined losses** (Dice + Focal) handle imbalance effectively
-3. **Post-processing** is non-negotiable for practical applications
-4. **Data augmentation** can partially compensate for limited data
-5. **Proper evaluation** (multiple metrics, statistical analysis) reveals true performance
+1. **Transfer learning is crucial** for small datasets - Pre-trained ResNet-101 provides strong feature extraction
+2. **Combined losses** (CE + Dice with 1:3 weighting) handle imbalance effectively
+3. **Differential learning rates** - Training backbone slower (10×) prevents catastrophic forgetting
+4. **Gradient accumulation** enables larger effective batch sizes on limited GPU memory
+5. **Mixed precision training** (FP16) reduces memory by ~50% enabling higher resolutions
+6. **Post-processing** is non-negotiable for practical applications - adds +3.7% IoU
+7. **Data augmentation** can partially compensate for limited data
+8. **Proper evaluation** (multiple metrics, statistical analysis) reveals true performance
+9. **CosineAnnealingLR** provides smooth learning rate decay without manual tuning
 
 ---
 
