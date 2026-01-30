@@ -22,7 +22,7 @@ class LaneTracker:
     Attributes:
         smoothing_window (int): 스무딩 윈도우 크기
         min_confidence (float): 최소 신뢰도 임계값
-        vehicle_position (Tuple[float, float]): 차량 중심 위치 (이미지 좌표)
+        vehicle_position (Tuple[float, float]): 차량 중심 위치 (X, Y) 순서
         image_shape (Tuple[int, int]): 이미지 크기 (H, W)
     """
     
@@ -38,8 +38,8 @@ class LaneTracker:
         Parameters:
             smoothing_window: Moving average window size
             min_confidence: Minimum confidence threshold
-            vehicle_position: Vehicle center position in image coordinates
-                             Default: (image_height * 0.9, image_width / 2)
+            vehicle_position: Vehicle center position (X, Y) in image coordinates
+                             Default: (image_width / 2, image_height * 0.9)
             image_shape: Image dimensions (height, width)
             track_width_m: RC track width in meters
         """
@@ -49,10 +49,11 @@ class LaneTracker:
         self.track_width_m = track_width_m
         
         if vehicle_position is None:
-            # 기본: 이미지 하단 중앙 (RC 카메라는 차량 전방 하단)
+            # 기본: 이미지 하단 중앙 (X, Y) 순서
+            # RC 카메라는 차량 전방 하단을 촬영
             self.vehicle_position = (
-                image_shape[0] * 0.9,
-                image_shape[1] / 2
+                image_shape[1] / 2,      # X: 이미지 폭의 중앙
+                image_shape[0] * 0.9     # Y: 이미지 높이의 90%
             )
         else:
             self.vehicle_position = vehicle_position
