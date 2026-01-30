@@ -1,36 +1,293 @@
-# Deep Learning-Based Lane Detection for Autonomous RC Car Navigation
+# Autonomous Driving System - Modular ML Pipeline
 
 [![Python](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Modules](https://img.shields.io/badge/Modules-2%2F8-brightgreen.svg)](#modules)
 
-> **A high-performance semantic segmentation system for lane detection in indoor RC car racing environments using DeepLabV3+ with advanced post-processing pipeline**
+> **Microservice-style modular ML pipeline for autonomous driving, featuring independent, composable modules from lane detection to reinforcement learning**
 
-## 📄 Abstract
+## 📄 Project Overview
 
-This project presents a comprehensive deep learning solution for lane detection in autonomous RC car navigation. We implement **DeepLabV3+ with ResNet-101 backbone** for semantic segmentation, achieving **IoU of 0.6945** (optimized) on a limited dataset of 199 images. Our system addresses the challenge of learning from small-scale data through strategic data augmentation, combined loss functions (Dice + Focal Loss), and a novel post-processing pipeline involving morphological operations and polyline fitting. The model demonstrates excellent generalization (Val-Test gap < 0.1%) and provides a solid foundation for real-world autonomous driving applications.
+This project implements a **modular, microservice-style autonomous driving system** where each capability (lane detection, steering control, object detection, etc.) is developed as an independent, well-documented module. Each module follows a rigorous development process:
+
+1. **Architecture Design** - System design and technical specifications
+2. **Implementation** - Detailed code implementation with comprehensive documentation
+3. **Verification** - Extensive testing and validation
+4. **Performance Evaluation** - Quantitative analysis and benchmarking
+
+This approach enables:
+- ✅ **Independent Development** - Each module works standalone
+- ✅ **Easy Integration** - Standard interfaces for module composition
+- ✅ **Incremental Testing** - Validate each component separately
+- ✅ **Portfolio Quality** - Complete documentation for each capability
 
 ---
 
 ## 📑 Table of Contents
 
-- [1. Introduction](#1-introduction)
-- [2. Related Work](#2-related-work)
-- [3. Methodology](#3-methodology)
-- [4. Architecture](#4-architecture)
-- [5. Experiments](#5-experiments)
-- [6. Results](#6-results)
-- [7. Analysis](#7-analysis)
-- [8. Installation](#8-installation)
-- [9. Usage](#9-usage)
-- [10. Project Structure](#10-project-structure)
-- [11. Documentation](#11-documentation)
-- [12. Conclusion](#12-conclusion)
-- [13. References](#13-references)
+- [Modules](#modules)
+- [System Architecture](#system-architecture)
+- [Development Process](#development-process)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Integration](#integration)
+- [Documentation](#documentation)
+- [Roadmap](#roadmap)
+- [References](#references)
 
 ---
 
-## 1. Introduction
+## Modules
+
+This project consists of 8 independent modules, each with complete documentation and implementation:
+
+| # | Module | Status | Difficulty | Portfolio Value | Timeline |
+|---|--------|--------|------------|-----------------|----------|
+| 01 | **[Lane Detection](01-lane-detection/)** | ✅ Complete | ⭐⭐ | ⭐⭐⭐⭐⭐ | Baseline |
+| 02 | **[Lane Keeping Assist](02-lane-keeping-assist/)** | 🔄 Design Complete | ⭐⭐ | ⭐⭐⭐⭐⭐ | 1 week |
+| 03 | **Object Detection (YOLO)** | 📦 Planned | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 2 weeks |
+| 04 | **Traffic Sign Recognition** | 📦 Planned | ⭐⭐ | ⭐⭐⭐⭐ | 1 week |
+| 05 | **Semantic Segmentation** | 📦 Planned | ⭐⭐⭐ | ⭐⭐⭐⭐ | 2 weeks |
+| 06 | **End-to-End Learning** | 📦 Planned | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 3 weeks |
+| 07 | **Depth Estimation** | 📦 Planned | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 2 weeks |
+| 08 | **Reinforcement Learning** | 📦 Planned | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 4+ weeks |
+
+### Module 01: Lane Detection ✅
+- **Technology**: DeepLabV3+ with ResNet-101
+- **Performance**: IoU 0.6945, 98.88% pixel accuracy
+- **Features**: Semantic segmentation, post-processing pipeline
+- **[View Module](01-lane-detection/)**
+
+### Module 02: Lane Keeping Assist 🔄
+- **Technology**: PID control, departure detection
+- **Status**: Architecture & specifications complete, implementation next
+- **Features**: Real-time steering control, multi-level warnings, fail-safe mechanisms
+- **[View Module](02-lane-keeping-assist/)**
+
+### Coming Soon...
+Modules 03-08 will follow the same rigorous documentation and implementation process.
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Autonomous Driving System                     │
+└─────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Module 01  │───▶│   Module 02  │    │   Module 03  │
+│     Lane     │    │     Lane     │    │    Object    │
+│  Detection   │    │   Keeping    │    │  Detection   │
+└──────────────┘    └──────┬───────┘    └──────────────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │  Integration │
+                    │    Layer     │
+                    └──────────────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │   Vehicle    │
+                    │   Control    │
+                    └──────────────┘
+```
+
+Each module:
+- **Standalone Operation**: Can run independently for testing
+- **Standard Interface**: Input/output contracts for easy integration
+- **Complete Documentation**: Architecture, implementation, and verification docs
+- **Comprehensive Testing**: Unit, integration, and performance tests
+
+---
+
+## Development Process
+
+Each module follows a 4-phase development process:
+
+### Phase 1: Design 📋
+1. **Architecture Design Document** (`01_아키텍처_설계서.md`)
+   - System overview and requirements
+   - Component design and data flow
+   - Technology stack selection
+   - Performance targets
+
+2. **Implementation Specification** (`02_구현_명세서.md`)
+   - Detailed class and function specifications
+   - Algorithm descriptions
+   - API documentation
+   - Configuration schemas
+
+3. **Verification Plan** (`03_검증서.md`)
+   - Test strategy and KPIs
+   - Unit and integration test plans
+   - Performance benchmarks
+   - Safety validation
+
+### Phase 2: Implementation 💻
+- Code development following specifications
+- Unit tests for each component
+- Integration with other modules
+- Performance optimization
+
+### Phase 3: Verification 🧪
+- Execute test plans
+- Measure against KPIs
+- Document results
+
+4. **Conformance Analysis** (`04_구현_일치율_분석.md`)
+   - Design vs. implementation comparison
+   - Deviation analysis and justification
+
+5. **Performance Evaluation** (`05_성능_평가.md`)
+   - Quantitative metrics
+   - Comparison with baselines
+   - Improvement recommendations
+
+### Phase 4: Integration 🔗
+- Connect with adjacent modules
+- System-level testing
+- Deployment preparation
+
+---
+
+## Getting Started
+
+### Prerequisites
+```bash
+Python 3.10+
+PyTorch 2.0+
+CUDA (optional, for GPU acceleration)
+```
+
+### Installation
+```bash
+# Clone repository
+git clone https://github.com/hyunahn1/-autonomous-driving_ML.git
+cd autonomous-driving-ML
+
+# Install common dependencies
+pip install -r requirements.txt
+
+# Navigate to specific module
+cd 01-lane-detection  # or 02-lane-keeping-assist, etc.
+pip install -r requirements.txt
+```
+
+### Running a Module
+```bash
+# Example: Module 01 (Lane Detection)
+cd 01-lane-detection
+python train_optimized.py  # Train model
+python test_with_postprocess.py  # Test model
+
+# Example: Module 02 (Lane Keeping Assist)
+cd 02-lane-keeping-assist
+python main.py  # Run LKAS system
+```
+
+---
+
+## Project Structure
+
+```
+autonomous-driving-ML/
+├── README.md                      # This file
+├── LICENSE
+├── requirements.txt               # Common dependencies
+│
+├── 01-lane-detection/             # Module 01 ✅
+│   ├── README.md
+│   ├── docs/                      # Complete documentation
+│   ├── src/                       # Source code
+│   ├── tests/                     # Test suite
+│   └── requirements.txt
+│
+├── 02-lane-keeping-assist/        # Module 02 🔄
+│   ├── README.md
+│   ├── docs/                      # Complete documentation
+│   ├── src/                       # Source code (in progress)
+│   ├── tests/                     # Test suite (in progress)
+│   └── requirements.txt
+│
+├── 03-object-detection/           # Module 03 📦
+├── 04-traffic-sign-recognition/   # Module 04 📦
+├── 05-semantic-segmentation/      # Module 05 📦
+├── 06-end-to-end-learning/        # Module 06 📦
+├── 07-depth-estimation/           # Module 07 📦
+├── 08-reinforcement-learning/     # Module 08 📦
+│
+├── integration/                   # Module integration layer
+│   ├── message_bus.py
+│   └── system_integrator.py
+│
+└── deployment/                    # Deployment configs
+    ├── docker/
+    └── kubernetes/
+```
+
+---
+
+## Integration
+
+Modules can be used independently or combined:
+
+```python
+# Standalone usage
+from module_01 import LaneDetector
+detector = LaneDetector()
+lane_output = detector.detect(image)
+
+# Integrated usage
+from module_01 import LaneDetector
+from module_02 import LaneKeepingAssist
+
+detector = LaneDetector()
+lkas = LaneKeepingAssist()
+
+lane_output = detector.detect(image)
+control_output = lkas.process_frame(lane_output, vehicle_state)
+```
+
+---
+
+## Documentation
+
+Each module contains comprehensive documentation:
+
+- **README.md** - Module overview and quick start
+- **docs/01_아키텍처_설계서.md** - Architecture and design decisions
+- **docs/02_구현_명세서.md** - Implementation details and API specs
+- **docs/03_검증서.md** - Testing and verification plans
+- **docs/04_구현_일치율_분석.md** - Implementation conformance analysis
+- **docs/05_성능_평가.md** - Performance evaluation results
+
+---
+
+## Roadmap
+
+### Current Focus: Module 02 (Week 1)
+- [x] Architecture design
+- [x] Implementation specification
+- [x] Verification plan
+- [ ] Core implementation
+- [ ] Unit testing
+- [ ] Integration with Module 01
+
+### Next Steps:
+- Module 03: Object Detection (YOLO v8)
+- Module 04: Traffic Sign Recognition
+- Module 05: Multi-class Semantic Segmentation
+- Module 06: End-to-End Learning
+- Module 07: Depth Estimation
+- Module 08: Reinforcement Learning
+
+---
+
+## 1. Module 01: Lane Detection - Introduction
 
 ### 1.1 Problem Statement
 
