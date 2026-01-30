@@ -1,0 +1,28 @@
+# YOLOv8 Dataset Configuration
+# RC Track Object Detection - High Accuracy
+
+# Dataset paths (absolute path recommended)
+path: /Users/ahnhyunjun/Desktop/SEA_ME/-autonomous-driving_ML/03-object-detection/datasets
+train: images/train
+val: images/val
+test: images/test
+
+# Number of classes
+nc: 5
+
+# Class names (0-indexed)
+names:
+  0: traffic_cone
+  1: obstacle
+  2: robot_car
+  3: traffic_sign
+  4: pedestrian
+
+# Image settings
+imgsz: 640  # Input image size (square)
+
+# Additional metadata
+environment: indoor_rc_track
+track_size: 3x4_meters
+camera: pi_camera_v2
+resolution: 640x480

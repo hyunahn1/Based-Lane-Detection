@@ -1,0 +1,80 @@
+# YOLOv8l Training Hyperparameters
+# Focus: High Accuracy Detection
+
+# Model
+model: yolov8l.pt  # Large model for best accuracy
+task: detect
+
+# Training parameters
+epochs: 200
+batch: 16           # Adjust based on GPU memory
+imgsz: 640          # Input size (square)
+patience: 50        # Early stopping patience
+save: true
+save_period: 10     # Save checkpoint every 10 epochs
+
+# Optimizer
+optimizer: AdamW
+lr0: 0.001          # Initial learning rate
+lrf: 0.01           # Final lr = lr0 * lrf
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3
+warmup_momentum: 0.8
+warmup_bias_lr: 0.1
+
+# Loss weights (정확도 우선)
+box: 7.5            # Box loss weight (high for accurate localization)
+cls: 0.5            # Classification loss weight
+dfl: 1.5            # Distribution Focal Loss weight
+
+# Augmentation (aggressive for robustness)
+hsv_h: 0.015        # Hue augmentation
+hsv_s: 0.7          # Saturation augmentation
+hsv_v: 0.4          # Value (brightness) augmentation
+degrees: 10.0       # Rotation (±10°)
+translate: 0.1      # Translation (±10%)
+scale: 0.5          # Scale (0.5× to 1.5×)
+shear: 0.0          # Shear (disabled)
+perspective: 0.0    # Perspective (disabled, fixed camera)
+flipud: 0.0         # Vertical flip (disabled)
+fliplr: 0.5         # Horizontal flip (50% probability)
+mosaic: 1.0         # Mosaic augmentation (enabled)
+mixup: 0.1          # Mixup augmentation (10%)
+copy_paste: 0.0     # Copy-paste (disabled)
+
+# Inference parameters
+conf: 0.25          # Confidence threshold (lower for higher recall)
+iou: 0.45           # NMS IoU threshold
+max_det: 100        # Maximum detections per image
+agnostic_nms: false # Class-specific NMS
+multi_label: false  # Single label per box
+
+# Hardware
+device: 0           # GPU 0 (or 'cpu' for CPU-only)
+workers: 8          # DataLoader workers (multiprocessing)
+amp: true           # Automatic Mixed Precision (FP16)
+
+# Logging & Checkpoints
+project: runs/train
+name: yolov8l_accuracy
+exist_ok: false
+pretrained: true    # Use COCO pre-trained weights
+verbose: true       # Verbose output
+seed: 42            # Random seed for reproducibility
+
+# Transfer learning
+freeze: 10          # Freeze first 10 layers (backbone)
+
+# Validation
+val: true           # Validate during training
+plots: true         # Save training plots
+save_json: true     # Save results as JSON
+save_hybrid: false  # Save hybrid labels (disabled)
+
+# Advanced
+rect: false         # Rectangular training (disabled)
+resume: false       # Resume from last checkpoint
+overlap_mask: true  # Masks should overlap
+mask_ratio: 4       # Mask downsample ratio
+dropout: 0.0        # Dropout (not used in YOLOv8)

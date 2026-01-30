@@ -1,0 +1,23 @@
+# CARLA Integration Requirements
+
+# CARLA
+carla>=0.9.13
+
+# Deep Learning (Module 01, 03)
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0
+
+# Computer Vision
+opencv-python>=4.9.0
+numpy>=1.24.0
+pillow>=10.0.0
+
+# Utilities
+pyyaml>=6.0
+tqdm>=4.65.0
+
+# Already installed from other modules:
+# - Module 01 dependencies
+# - Module 02 dependencies
+# - Module 03 dependencies
