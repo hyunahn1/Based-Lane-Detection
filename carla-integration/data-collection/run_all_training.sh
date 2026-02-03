@@ -17,7 +17,7 @@ echo ""
 echo "📸 [Phase 1/4] 데이터 수집 시작..."
 echo ""
 
-cd ~/carla_workspace/autonomous-driving_ML/carla-integration/data-collection
+cd ~/ads-skynet/hyunahn/carla-integration/data-collection
 
 echo "✅ 1-1. Dependencies 설치"
 pip3 install -r requirements.txt -q
@@ -44,7 +44,7 @@ echo ""
 echo "🎯 [Phase 2/4] Module 03 학습 시작..."
 echo ""
 
-cd ~/carla_workspace/autonomous-driving_ML/03-object-detection
+cd ~/ads-skynet/hyunahn/03-object-detection
 
 echo "✅ 2-1. Dependencies 설치"
 pip3 install -r requirements.txt -q
@@ -80,7 +80,7 @@ echo ""
 echo "🧠 [Phase 3/4] Module 06 학습 시작..."
 echo ""
 
-cd ~/carla_workspace/autonomous-driving_ML/06-end-to-end-learning
+cd ~/ads-skynet/hyunahn/06-end-to-end-learning
 
 echo "✅ 3-1. Dependencies 설치"
 pip3 install -r requirements.txt -q
@@ -102,7 +102,7 @@ echo ""
 echo "🤖 [Phase 4/4] Module 08 학습 시작..."
 echo ""
 
-cd ~/carla_workspace/autonomous-driving_ML/08-reinforcement-learning
+cd ~/ads-skynet/hyunahn/08-reinforcement-learning
 
 echo "✅ 4-1. Dependencies 설치"
 pip3 install -r requirements.txt -q
@@ -125,7 +125,7 @@ echo ""
 echo "💾 [Phase 5/5] 결과 백업..."
 echo ""
 
-cd ~/carla_workspace/autonomous-driving_ML
+cd ~/ads-skynet/hyunahn
 
 echo "✅ Git commit & push"
 git add .

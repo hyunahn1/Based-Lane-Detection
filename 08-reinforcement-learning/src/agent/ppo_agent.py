@@ -157,7 +157,11 @@ class PPOAgent:
         obs_tensor = {}
         for key, value in obs.items():
             if isinstance(value, np.ndarray):
-                obs_tensor[key] = torch.FloatTensor(value).unsqueeze(0).to(self.device)
+                if key == 'image':
+                    # Image: (H, W, C) -> (C, H, W)
+                    obs_tensor[key] = torch.FloatTensor(value).permute(2, 0, 1).unsqueeze(0).to(self.device)
+                else:
+                    obs_tensor[key] = torch.FloatTensor(value).unsqueeze(0).to(self.device)
             else:
                 obs_tensor[key] = torch.FloatTensor([value]).unsqueeze(0).to(self.device)
         return obs_tensor
@@ -166,9 +170,14 @@ class PPOAgent:
         """Stack observations into batch"""
         obs_batch = {}
         for key in obs_list[0].keys():
-            obs_batch[key] = torch.FloatTensor(
-                np.array([obs[key] for obs in obs_list])
-            ).to(self.device)
+            if key == 'image':
+                # Image: (B, H, W, C) -> (B, C, H, W)
+                stacked = np.array([obs[key] for obs in obs_list])
+                obs_batch[key] = torch.FloatTensor(stacked).permute(0, 3, 1, 2).to(self.device)
+            else:
+                obs_batch[key] = torch.FloatTensor(
+                    np.array([obs[key] for obs in obs_list])
+                ).to(self.device)
         return obs_batch
     
     def save(self, path: str):

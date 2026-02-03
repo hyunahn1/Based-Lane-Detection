@@ -36,9 +36,10 @@ class ActorCritic(nn.Module):
         )
         
         # MLP for scalars (velocity, steering, etc.)
-        # 1 + 1 + 1 + 1 + 1 + 10 = 15 dims
+        # velocity(1) + steering(1) + lateral_offset(1) + heading_error(1) + 
+        # distance_to_obstacle(1) + prev_actions(2) = 7 dims
         self.mlp = nn.Sequential(
-            nn.Linear(15, 64),
+            nn.Linear(7, 64),
             nn.ReLU(),
             nn.Linear(64, 64),
             nn.ReLU()

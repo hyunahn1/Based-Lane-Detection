@@ -10,7 +10,9 @@ from pathlib import Path
 import time
 
 # Add CARLA integration to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'carla-integration' / 'sim1-traditional'))
 sys.path.insert(0, str(Path(__file__).parent.parent / 'carla-integration' / 'sim3-rl'))
+from carla_interface import CarlaInterface
 from carla_gym_env import CARLAGymEnv
 
 # Add Module 08 to path
@@ -44,7 +46,13 @@ def main():
     
     # Environment
     print("\n🔌 Connecting to CARLA...")
-    env = CARLAGymEnv(host=args.carla_host, port=args.carla_port)
+    carla_interface = CarlaInterface()
+    carla_interface.connect()
+    carla_interface.spawn_vehicle()
+    carla_interface.spawn_camera()
+    print("⏳ Waiting for camera stream...")
+    time.sleep(3)
+    env = CARLAGymEnv(carla_interface)
     print("✅ Connected to CARLA")
     
     # Agent
@@ -54,7 +62,7 @@ def main():
         action_space=env.action_space,
         device='cuda'
     )
-    print(f"✅ Agent created ({agent.get_param_count():,} parameters)")
+    print(f"✅ Agent created")
     
     # Curiosity
     curiosity = None
@@ -65,7 +73,7 @@ def main():
             action_dim=2,
             device='cuda'
         )
-        print(f"✅ Curiosity module created ({curiosity.get_param_count():,} parameters)")
+        print(f"✅ Curiosity module created")
     
     # Training loop
     print("\n" + "="*80)
@@ -98,9 +106,10 @@ def main():
                 reward_int = 0.0
                 if curiosity is not None:
                     import torch
-                    obs_tensor = torch.tensor(obs['image'], dtype=torch.float32).unsqueeze(0)
-                    next_obs_tensor = torch.tensor(next_obs['image'], dtype=torch.float32).unsqueeze(0)
-                    action_tensor = torch.tensor(action, dtype=torch.float32).unsqueeze(0)
+                    # Image: (H, W, C) -> (C, H, W)
+                    obs_tensor = torch.tensor(obs['image'], dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to('cuda')
+                    next_obs_tensor = torch.tensor(next_obs['image'], dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to('cuda')
+                    action_tensor = torch.tensor(action, dtype=torch.float32).unsqueeze(0).to('cuda')
                     
                     reward_int = curiosity.compute_intrinsic_reward(
                         obs_tensor, next_obs_tensor, action_tensor
@@ -125,14 +134,23 @@ def main():
                 obs = next_obs
             
             # Update agent
-            agent.update([trajectory])
+            agent.update(trajectory)
             
             # Update curiosity
-            if curiosity is not None:
-                curiosity_loss = curiosity.update(
-                    [t['obs']['image'] for t in trajectory],
-                    [t['action'] for t in trajectory]
-                )
+            if curiosity is not None and len(trajectory) > 1:
+                import torch
+                # Get consecutive obs-action pairs
+                obs_imgs = torch.stack([
+                    torch.tensor(t['obs']['image'], dtype=torch.float32).permute(2, 0, 1)
+                    for t in trajectory[:-1]
+                ]).to('cuda')
+                next_obs_imgs = torch.stack([
+                    torch.tensor(trajectory[i+1]['obs']['image'], dtype=torch.float32).permute(2, 0, 1)
+                    for i in range(len(trajectory)-1)
+                ]).to('cuda')
+                actions = torch.tensor([t['action'] for t in trajectory[:-1]], dtype=torch.float32).to('cuda')
+                
+                inv_loss, fwd_loss = curiosity.update(obs_imgs, next_obs_imgs, actions)
             
             # Logging
             print(f"[Episode {episode:4d}] "
@@ -165,7 +183,7 @@ def main():
             curiosity.save(save_dir / 'final_curiosity.pth')
         
         # Cleanup
-        env.close()
+        carla_interface.cleanup()
         
         print("\n" + "="*80)
         print("✅ Training Complete!")

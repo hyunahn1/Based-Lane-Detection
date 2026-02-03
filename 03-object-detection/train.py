@@ -47,8 +47,9 @@ def train_yolov8(
     print(f"Device:      {device}")
     print("="*80 + "\n")
     
-    # GPU 확인
+    # GPU 확인 (device를 int로 변환)
     if device != 'cpu':
+        device = int(device) if isinstance(device, str) and device.isdigit() else device
         if not torch.cuda.is_available():
             print("⚠️ CUDA not available, using CPU")
             device = 'cpu'

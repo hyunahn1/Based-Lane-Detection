@@ -1,0 +1,9 @@
+path: ../carla-integration/data-collection/collected_data_split
+train: train/images
+val: val/images
+test: test/images
+
+names:
+  0: vehicle
+
+nc: 1

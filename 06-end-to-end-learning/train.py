@@ -25,12 +25,14 @@ from models.e2e_model import EndToEndModel
 class DrivingDataset(Dataset):
     """CARLA E2E Driving Dataset"""
     
-    def __init__(self, csv_path, transform=None):
+    def __init__(self, csv_path, image_dir=None, transform=None):
         self.df = pd.read_csv(csv_path)
-        self.data_dir = Path(csv_path).parent
+        # If image_dir is provided, use it; otherwise use csv parent directory
+        self.image_dir = Path(image_dir) if image_dir else Path(csv_path).parent / 'images'
         self.transform = transform
         
         print(f"Loaded {len(self.df)} samples from {csv_path}")
+        print(f"Images from: {self.image_dir}")
     
     def __len__(self):
         return len(self.df)
@@ -39,8 +41,10 @@ class DrivingDataset(Dataset):
         row = self.df.iloc[idx]
         
         # Load image
-        img_path = self.data_dir / 'images' / row['image']
+        img_path = self.image_dir / row['image']
         image = cv2.imread(str(img_path))
+        if image is None:
+            raise ValueError(f"Failed to load image: {img_path}")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = cv2.resize(image, (224, 224))
         
@@ -143,8 +147,12 @@ def main():
     val_df.to_csv(val_csv, index=False)
     
     # Datasets
-    train_dataset = DrivingDataset(train_csv)
-    val_dataset = DrivingDataset(val_csv)
+    # Get original image directory from input data path
+    original_data_dir = Path(args.data).parent
+    image_dir = original_data_dir / 'images'
+    
+    train_dataset = DrivingDataset(train_csv, image_dir=image_dir)
+    val_dataset = DrivingDataset(val_csv, image_dir=image_dir)
     
     # Dataloaders
     train_loader = DataLoader(

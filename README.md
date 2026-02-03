@@ -420,9 +420,36 @@ cd CARLA_0.9.15
 
 ## 📖 Documentation
 
-Each module contains comprehensive documentation:
+### 📚 Project-Level Documentation
+
+```
+docs/
+├── README.md                           # Documentation overview
+├── PERFORMANCE_COMPARISON.md           # 3 paradigms performance analysis
+├── problem.md                          # Project specification (English)
+└── problem_ko.md                       # Project specification (Korean)
+```
+
+**[→ View All Documentation](docs/)**
+
+### 🧪 Tests & Validation
+
+```
+tests/
+├── README.md                           # Test overview
+├── FACTCHECK.py                        # Full project factcheck
+├── TEST_RESEARCH.py                    # Research features test
+├── performance_test.py                 # Performance comparison
+└── performance_results.json            # Test results
+```
+
+**[→ View All Tests](tests/)**
+
+---
 
 ### Module Documentation Structure
+
+Each module contains comprehensive documentation:
 
 ```
 XX-module-name/
@@ -443,10 +470,11 @@ carla-integration/
 └── docs/
     ├── 01-03_Sim1_*.md         # Simulation 1 (Traditional)
     ├── 04-06_Sim2_*.md         # Simulation 2 (E2E)
-    └── 07-09_Sim3_*.md         # Simulation 3 (RL)
+    ├── 07-09_Sim3_*.md         # Simulation 3 (RL)
+    └── CARLA_INTEGRATION_TEST_RESULTS.md  # Integration test results
 ```
 
-**Total Documentation**: 27 design docs + 5 READMEs = **32 documents**
+**Total Documentation**: 32+ documents (design specs, test reports, performance analysis)
 
 ---
 

@@ -14,6 +14,9 @@ import numpy as np
 from typing import Dict, List, Tuple
 import time
 
+# Import Module 01 model (at module level, not inside __init__)
+from src.models.deeplabv3plus import get_model
+
 
 class LaneDetectorNode:
     """
@@ -28,8 +31,7 @@ class LaneDetectorNode:
         self.device = device
         self.input_size = input_size
         
-        # Load Module 01 model
-        from src.models.deeplabv3plus import get_model
+        # Load Module 01 model (get_model already imported above)
         
         self.model = get_model(num_classes=2)
         

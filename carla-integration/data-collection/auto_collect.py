@@ -54,6 +54,14 @@ class CARLADataCollector:
         self.client.set_timeout(10.0)
         self.world = self.client.get_world()
         
+        # Traffic Manager 초기화 (autopilot 필수!)
+        self.traffic_manager = self.client.get_trafficmanager(8000)
+        self.traffic_manager.set_synchronous_mode(True)
+        
+        # 안전 주행 설정
+        self.traffic_manager.set_global_distance_to_leading_vehicle(3.0)  # 앞차 거리 증가
+        self.traffic_manager.global_percentage_speed_difference(30.0)  # 속도 30% 감소 (안전 주행)
+        
         # 동기 모드 설정 (중요!)
         settings = self.world.get_settings()
         settings.synchronous_mode = True
@@ -281,9 +289,9 @@ class CARLADataCollector:
         self.spawn_vehicle()
         self.spawn_camera()
         
-        # Autopilot 활성화
-        self.vehicle.set_autopilot(True)
-        print("🤖 Autopilot enabled\n")
+        # Autopilot 활성화 (Traffic Manager 사용)
+        self.vehicle.set_autopilot(True, self.traffic_manager.get_port())
+        print("🤖 Autopilot enabled with Traffic Manager\n")
         
         # 수집 시작
         start_time = time.time()
@@ -308,10 +316,19 @@ class CARLADataCollector:
                 
                 last_save_time = current_time
                 
-                # 차량 정보
-                control = self.vehicle.get_control()
-                velocity_vec = self.vehicle.get_velocity()
-                velocity = np.linalg.norm([velocity_vec.x, velocity_vec.y, velocity_vec.z])
+                # 차량 정보 (actor 유효성 체크)
+                try:
+                    control = self.vehicle.get_control()
+                    velocity_vec = self.vehicle.get_velocity()
+                    velocity = np.linalg.norm([velocity_vec.x, velocity_vec.y, velocity_vec.z])
+                except RuntimeError:
+                    # Actor가 파괴됨 (충돌 등) - 재생성
+                    print("\n⚠️  Vehicle destroyed, respawning...")
+                    self.spawn_vehicle()
+                    self.spawn_camera()
+                    self.vehicle.set_autopilot(True, self.traffic_manager.get_port())
+                    print("✅ Vehicle respawned, continuing collection\n")
+                    continue
                 
                 # 프레임 저장
                 self.save_frame(image_data, control, velocity)
@@ -359,18 +376,23 @@ class CARLADataCollector:
             json.dump(stats, f, indent=2)
         print(f"✅ Saved statistics to {stats_path}")
         
-        # 액터 삭제
-        if self.camera is not None:
-            self.camera.stop()
-            self.camera.destroy()
-        
-        if self.vehicle is not None:
-            self.vehicle.destroy()
+        # 카메라 listening 중단 (중요!)
+        try:
+            if self.camera is not None and self.camera.is_listening:
+                self.camera.stop()
+        except Exception:
+            pass
         
         # 동기 모드 해제
-        settings = self.world.get_settings()
-        settings.synchronous_mode = False
-        self.world.apply_settings(settings)
+        try:
+            settings = self.world.get_settings()
+            settings.synchronous_mode = False
+            self.world.apply_settings(settings)
+        except Exception:
+            pass
+        
+        # 액터 삭제는 CARLA가 자동으로 처리
+        # (명시적 destroy() 호출 시 C++ 에러 발생)
         
         print("\n" + "="*80)
         print("✅ Data collection complete!")

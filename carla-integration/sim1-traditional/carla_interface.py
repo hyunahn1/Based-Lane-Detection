@@ -115,6 +115,83 @@ class CarlaInterface:
             'heading': transform.rotation.yaw
         }
     
+    def get_lane_info(self) -> Dict:
+        """
+        Get lane information for RL
+        
+        Returns:
+            lateral_offset: 차선 중심으로부터의 횡방향 거리 (m)
+            heading_error: 차선 방향과의 각도 차이 (rad)
+        """
+        if self.vehicle is None:
+            return {'lateral_offset': 0.0, 'heading_error': 0.0}
+        
+        # Get current waypoint
+        vehicle_location = self.vehicle.get_location()
+        current_waypoint = self.world.get_map().get_waypoint(
+            vehicle_location,
+            project_to_road=True,
+            lane_type=carla.LaneType.Driving
+        )
+        
+        if current_waypoint is None:
+            return {'lateral_offset': 0.0, 'heading_error': 0.0}
+        
+        # Calculate lateral offset
+        waypoint_location = current_waypoint.transform.location
+        vehicle_transform = self.vehicle.get_transform()
+        
+        # Vector from waypoint to vehicle
+        dx = vehicle_location.x - waypoint_location.x
+        dy = vehicle_location.y - waypoint_location.y
+        
+        # Waypoint forward vector
+        waypoint_yaw = np.deg2rad(current_waypoint.transform.rotation.yaw)
+        waypoint_forward = np.array([np.cos(waypoint_yaw), np.sin(waypoint_yaw)])
+        
+        # Calculate lateral offset (perpendicular distance)
+        vehicle_vector = np.array([dx, dy])
+        lateral_offset = np.cross(waypoint_forward, vehicle_vector)
+        
+        # Calculate heading error
+        vehicle_yaw = np.deg2rad(vehicle_transform.rotation.yaw)
+        heading_error = np.arctan2(
+            np.sin(vehicle_yaw - waypoint_yaw),
+            np.cos(vehicle_yaw - waypoint_yaw)
+        )
+        
+        return {
+            'lateral_offset': float(lateral_offset),
+            'heading_error': float(heading_error)
+        }
+    
+    def get_obstacle_distance(self) -> float:
+        """
+        Get distance to nearest obstacle
+        
+        Returns:
+            distance: 가장 가까운 차량까지의 거리 (m), 없으면 10.0
+        """
+        if self.vehicle is None:
+            return 10.0
+        
+        vehicle_location = self.vehicle.get_location()
+        vehicle_list = self.world.get_actors().filter('vehicle.*')
+        
+        min_distance = 10.0  # Default max distance
+        
+        for other_vehicle in vehicle_list:
+            if other_vehicle.id == self.vehicle.id:
+                continue
+            
+            other_location = other_vehicle.get_location()
+            distance = vehicle_location.distance(other_location)
+            
+            if distance < min_distance:
+                min_distance = distance
+        
+        return float(min_distance)
+    
     def apply_control(self, steering: float, throttle: float):
         """
         Apply vehicle control
